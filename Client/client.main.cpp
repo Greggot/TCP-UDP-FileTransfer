@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 		
 		size_t milliseconds = strtoul(argv[Timeout], NULL, 10);
 		
-		FILE* in = fopen(argv[FilePath], "r");
+		FILE* in = fopen(argv[FilePath], "rb");
 		if (in == nullptr)
 		{
 			printf("Failed to open file.\n");

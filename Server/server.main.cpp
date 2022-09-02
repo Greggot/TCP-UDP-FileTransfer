@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
             
             out = fopen(filepath.c_str(), "w");
             fclose(out);
-            out = fopen(filepath.c_str(), "a");
+            out = fopen(filepath.c_str(), "ab");
             if (out)
                 printf("Created file \"%s\"\n", request.argument);
             });
