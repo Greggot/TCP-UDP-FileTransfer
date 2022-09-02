@@ -52,8 +52,9 @@ void Client::Transmit(const service serv)
         RecordErrorAndReturn();
 }
 
-void Client::Transmit(void* data, int16_t size)
+void Client::Transmit(const service serv, void* data, int16_t size)
 {
+    tx.service = serv;
     tx.length = size < ArgumentSize ? size : ArgumentSize;
     memcpy(tx.argument, data, tx.length);
     if (send(server, (char*)&tx, EmptyMessageSize + tx.length, 0))

@@ -22,12 +22,11 @@ namespace TCP
 		void CloseConnection();
 		
 		void Transmit(const service serv);
-		void Transmit(void* data, int16_t size);
+		void Transmit(const service serv, void* data, int16_t size);
 		template<class type>
 		void Transmit(const service serv, const type& data, int16_t size = sizeof(type) & 0x7FFF)
 		{
-			tx.service = serv;
-			Transmit((void*) & data, size);
+			Transmit(serv, (void*) & data, size);
 		}
 
 		int getLastError() const { return error; }
