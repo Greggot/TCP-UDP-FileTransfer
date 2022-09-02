@@ -48,11 +48,12 @@ int main(int argc, char* argv[])
             std::string filepath = std::string(argv[Folder]) + "/" + std::string((char*)request.argument);
             
             out = fopen(filepath.c_str(), "w");
-            fclose(out);
+            if(out)
+                fclose(out);
             out = fopen(filepath.c_str(), "ab");
             if (out)
                 printf("Created file \"%s\"\n", request.argument);
-            });
+        });
 
         tcp.set(TCP::UDPclose, [&udp, &tcp](const TCP::Buffer&) {
             udp.CloseConnection();
