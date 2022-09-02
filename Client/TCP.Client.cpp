@@ -33,15 +33,12 @@ Client::Client(char ip[], char port[])
             if (length < 0)
                 RecordErrorAndReturn();
 
-            printf("TCP service(%u) status(%u)\n", rx.service, rx.status);
-
             if (rx.service < service::Amount && callbacks[rx.service])
                 callbacks[rx.service](rx);
             else
                 printf("  Unknown service\n");
         }
     });
-    receiveThread.detach();
 }
 
 void Client::Transmit(const service serv)
@@ -68,10 +65,12 @@ void Client::Transmit(const service serv, void* data, int16_t size)
 void Client::CloseConnection()
 {
     isRunning = false;
+    receiveThread.join();
     closesocket(server);
     WSACleanup();
 }
 
 Client::~Client()
 {
+    CloseConnection();
 }
