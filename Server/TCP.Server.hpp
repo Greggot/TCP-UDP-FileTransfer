@@ -23,8 +23,16 @@ namespace TCP
 
 	public:
 		Server(char ip[], char port[]);
-
+		/**
+		* @brief Blocking call creates thread which listenes to socket and
+		* handles callbacks for services.
+		* Setup all callbacks before
+		* Place connection close and error parse after.
+		*/
 		void AcceptConnection();
+		/**
+		* @brief Finish AcceptConnection call, close socket
+		*/
 		void CloseConnection();
 
 		void Transmit(const service serv);
