@@ -6,38 +6,72 @@
 
 #pragma warning(disable : 4996)
 
+// Works with relative and full paths
+static inline char* getFileNamePtr(char* source, size_t size)
+{
+	while (--size)
+		if (source[size] == '\\' || source[size] == '/')
+			return &source[++size];
+	return source;
+}
+
+enum Argument
+{
+	IP = 1, 
+	TCPport,
+	UDPport,
+	FilePath,
+	Timeout,
+
+	Amount,
+};
+
 int main(int argc, char* argv[])
 {
-	char ip[] = "192.168.1.134";
-	char port[] = "6969";
-	char tcpport[] = "1337";
-	static char filename[] = "C:/Users/007/Desktop/VOCOM RD Tests/16.08.MotherDecompress.txt";
+	if (argc != Amount)
+	{
+		printf("Usage: Client <ip> <tcp_port> <udp_port> <file_path> <udp_timeout_ms>\n");
+		exit(0);
+	}
 
-	UDP::Client udp(ip, port);
-	TCP::Client tcp(ip, tcpport);
+	static char* filename = getFileNamePtr(argv[FilePath], sizeof(argv[FilePath]));
+	size_t namelen = strlen(argv[FilePath]);
+	if (filename == argv[FilePath])
+		namelen = namelen - (filename - argv[FilePath]);
+
+	UDP::Client udp(argv[IP], argv[UDPport]);
+	TCP::Client tcp(argv[IP], argv[TCPport]);
 
 	static std::condition_variable confirmation;
 	static std::mutex mutex;
 	static bool confirm = false;
-
 
 	tcp.set(TCP::Confirmation, [](const TCP::Buffer&) {
 		confirm = true;
 		confirmation.notify_one();
 	});
 
-	std::thread([&udp, &tcp]() {
+	std::thread([&udp, &tcp, argv, namelen]() {
 		
-		FILE* in = fopen(filename, "r");
+		size_t milliseconds = strtoul(argv[Timeout], NULL, 10);
+		
+		FILE* in = fopen(argv[FilePath], "r");
+		if (in == nullptr)
+		{
+			printf("Failed to open file.\n");
+			exit(1);
+		}
+		printf("Opened file \"%s\"\n", argv[FilePath]);
+
 		UDP::Buffer& inbuffer = udp.getBuffer();
 		inbuffer.sequenceNumber = 0;
 
-		char filename[] = "16.08.MotherDecompress.txt";
-		tcp.Transmit(TCP::FileName, filename);
+		tcp.Transmit(TCP::FileName, (void*)filename, namelen);
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		tcp.Transmit(TCP::UDPstart);
-		size_t size;
-		do
+		tcp.Transmit(TCP::UDPstart, (void*)argv[UDPport], strlen(argv[UDPport]));
+
+		size_t size = 1;
+		while (size)
 		{
 			size = fread(inbuffer.data, sizeof(char), sizeof(inbuffer.data), in);
 			std::unique_lock<std::mutex> lk(mutex);
@@ -46,10 +80,10 @@ int main(int argc, char* argv[])
 				outputLongBuffer("UDP transmit", inbuffer.data, size);
 				udp.Transmit(size);
 			}
-			while (!confirmation.wait_for(lk, std::chrono::seconds(1), [] { return confirm; }));
+			while (!confirmation.wait_for(lk, std::chrono::milliseconds(milliseconds), [] { return confirm; }));
 			confirm = false;
 			++inbuffer.sequenceNumber;
-		} while (size);
+		}
 
 		tcp.Transmit(TCP::UDPclose);
 		fclose(in);
