@@ -6,31 +6,50 @@
 
 #include <filesystem>
 
+
+enum Argument
+{
+    IP = 1,
+    Port,
+    Folder,
+
+    Amount,
+};
+
+
 int main(int argc, char* argv[])
 {
-    char ip[] = "192.168.1.134";
-    char port[] = "6969";
-    char tcpport[] = "1337";
-    char savecatalog[] = "./udpreceive";
+    if (argc != Amount)
+    {
+        printf("Usage: Server <ip> <port> <save_catalog>\n");
+        exit(0);
+    }
+
+    if (!std::filesystem::exists(argv[Folder]))
+        std::filesystem::create_directory(argv[Folder]);
 
     static FILE* out;
 
     while (true)
     {
-        UDP::Server udp(ip, port);
-        TCP::Server tcp(ip, tcpport);
-        udp.set([&tcp](const UDP::Buffer& request, size_t size) {
+        TCP::Server tcp(argv[IP], argv[Port]);
+        UDP::Server udp;
+
+        static const auto updreceive = [&tcp](const UDP::Buffer& request, size_t size) {
+            printf("(%u)", request.sequenceNumber);
             outputLongBuffer("UDP receive", request.data, size);
 
             if (out)
                 fwrite(request.data, sizeof(char), size, out);
             tcp.Transmit(TCP::Confirmation);
-            });
+            };
 
-        tcp.set(TCP::FileName, [savecatalog](const TCP::Buffer& request) {
-            out = fopen((const char*)request.argument, "w");
+        tcp.set(TCP::FileName, [argv](const TCP::Buffer& request) {
+            std::string filepath = std::string(argv[Folder]) + "/" + std::string((char*)request.argument);
+            
+            out = fopen(filepath.c_str(), "w");
             fclose(out);
-            out = fopen((const char*)request.argument, "a");
+            out = fopen(filepath.c_str(), "a");
             if (out)
                 printf("Created file \"%s\"\n", request.argument);
             });
@@ -42,7 +61,9 @@ int main(int argc, char* argv[])
             tcp.CloseConnection();
             });
 
-        tcp.set(TCP::UDPstart, [&udp](const TCP::Buffer&) {
+        tcp.set(TCP::UDPstart, [&udp, argv](const TCP::Buffer& request) {
+            udp = UDP::Server(argv[IP], (char*)request.argument);
+            udp.set(updreceive);
             udp.AcceptConnection();
             });
         tcp.AcceptConnection();

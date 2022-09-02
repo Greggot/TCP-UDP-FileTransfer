@@ -22,6 +22,7 @@ namespace UDP
 		receiveCallback callback = nullptr;
 	public:
 		Server(char ip[], char port[]);
+		Server(){};
 
 		void AcceptConnection();
 		void CloseConnection();
