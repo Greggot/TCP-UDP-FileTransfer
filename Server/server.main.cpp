@@ -17,6 +17,8 @@ enum Argument
 };
 
 
+#define Kilobyte 1024
+
 int main(int argc, char* argv[])
 {
     if (argc != Amount)
@@ -34,15 +36,18 @@ int main(int argc, char* argv[])
     {
         TCP::Server tcp(argv[IP], argv[Port]);
         UDP::Server udp;
+        size_t readsize = 0;
 
-        static const auto updreceive = [&tcp](const UDP::Buffer& request, size_t size) {
-            printf("(%u)", request.sequenceNumber);
-            outputLongBuffer("UDP receive", request.data, size);
+        static const auto updreceive = [&readsize, &tcp](const UDP::Buffer& request, size_t size) {
+            request.sequenceNumber;
+
+            readsize += size;
+            printf("\r Received %.2f KB", (float)readsize / Kilobyte);
 
             if (out)
                 fwrite(request.data, sizeof(char), size, out);
             tcp.Transmit(TCP::Confirmation);
-            };
+        };
 
         tcp.set(TCP::FileName, [argv](const TCP::Buffer& request) {
             std::string filepath = std::string(argv[Folder]) + "/" + std::string((char*)request.argument);
