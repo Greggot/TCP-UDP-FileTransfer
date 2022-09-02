@@ -39,13 +39,10 @@ void Server::AcceptConnection()
         while (isRunning)
         {
             length = recv(client, (char*)&rx, sizeof(rx), 0);
-            if (rx.length + EmptyMessageSize > length)
-                continue;
-
             if (length < 0)
                 RecordErrorAndReturn();
-
-            printf("TCP service(%u) status(%u)\n", rx.service, rx.status);
+            if (rx.length + EmptyMessageSize > length)
+                continue;
 
             if (rx.service < service::Amount && callbacks[rx.service])
                 callbacks[rx.service](rx);
@@ -55,6 +52,7 @@ void Server::AcceptConnection()
             memset(&rx, 0, length);
         }
     });
+    receiveThread.join();
 }
 
 void Server::CloseConnection()
@@ -82,6 +80,5 @@ void Server::Transmit(const service serv)
 
 Server::~Server()
 {
-    receiveThread.join();
-    printf("Closed server\n");
+    CloseConnection();
 }

@@ -57,16 +57,24 @@ int main(int argc, char* argv[])
         tcp.set(TCP::UDPclose, [&udp, &tcp](const TCP::Buffer&) {
             udp.CloseConnection();
             fclose(out);
-            printf("File closed! Server waiting one another connection...\n\n\n");
+            printf("\nFile closed! Server waiting one another connection...\n");
             tcp.CloseConnection();
-            });
+        });
 
         tcp.set(TCP::UDPstart, [&udp, argv](const TCP::Buffer& request) {
             udp = UDP::Server(argv[IP], (char*)request.argument);
             udp.set(updreceive);
             udp.AcceptConnection();
-            });
+        });
+
         tcp.AcceptConnection();
+        udp.CloseConnection();
+        
+        int error = tcp.getLastError();
+        if (error)
+            printf("\nConnection terminated: %i\n", error);
+
+        printf("\n\n");
     }
 
     return 0;
