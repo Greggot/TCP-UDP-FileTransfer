@@ -16,6 +16,7 @@ Server::Server(char ip[], char port[])
 
 	if (bind(sock, (sockaddr*)&server, sizeof(server)))
 		RecordErrorAndReturn();
+	printf("UDP accepting on port: %s\n", port);
 }
 
 void Server::AcceptConnection()
@@ -40,7 +41,6 @@ void Server::AcceptConnection()
 void Server::CloseConnection()
 {
 	isRunning = false;
-
 	closesocket(sock);
 	WSACleanup();
 }
