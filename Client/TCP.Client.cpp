@@ -50,6 +50,8 @@ void Client::Transmit(const service serv)
     tx.service = serv;
     if (send(server, (char*)&tx, EmptyMessageSize, 0))
         RecordErrorAndReturn();
+
+    memset(&tx, 0, EmptyMessageSize);
 }
 
 void Client::Transmit(const service serv, void* data, int16_t size)
@@ -59,6 +61,8 @@ void Client::Transmit(const service serv, void* data, int16_t size)
     memcpy(tx.argument, data, tx.length);
     if (send(server, (char*)&tx, EmptyMessageSize + tx.length, 0))
         RecordErrorAndReturn();
+    
+    memset(&tx, 0, EmptyMessageSize + tx.length);
 }
 
 void Client::CloseConnection()

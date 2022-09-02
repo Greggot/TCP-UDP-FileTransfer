@@ -51,6 +51,8 @@ void Server::AcceptConnection()
                 callbacks[rx.service](rx);
             else
                 printf("  Unknown service\n");
+            
+            memset(&rx, 0, length);
         }
     });
 }
