@@ -49,6 +49,7 @@ int main(int argc, char* argv[])
 	printf("Opened file \"%s\"\n", argv[FilePath]);
 	
 	TCP::Client tcp(argv[IP], argv[TCPport]);
+	TryToReportErrorAndExit("Error appeared in TCP::Client", tcp);
 
 	static std::condition_variable confirmation;
 	static std::mutex mutex;
@@ -67,6 +68,8 @@ int main(int argc, char* argv[])
 		fseek(in, 0, SEEK_SET);
 		
 		UDP::Client udp(argv[IP], argv[UDPport]);
+		TryToReportErrorAndExit("Error appeared in UDP::Client", udp);
+
 		UDP::Buffer& inbuffer = udp.getBuffer();
 		inbuffer.sequenceNumber = 0;
 

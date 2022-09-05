@@ -35,6 +35,7 @@ int main(int argc, char* argv[])
     while (true)
     {
         TCP::Server tcp(argv[IP], argv[Port]);
+        TryToReportErrorAndExit("Error appeared in TCP::Server", tcp);
         UDP::Server udp;
         size_t readsize = 0;
 
@@ -69,6 +70,7 @@ int main(int argc, char* argv[])
 
         tcp.set(TCP::UDPstart, [&udp, argv](const TCP::Buffer& request) {
             udp = UDP::Server(argv[IP], (char*)request.argument);
+            TryToReportErrorAndExit("Error appeared in UDP::Server", udp);
             udp.set(updreceive);
             udp.AcceptConnection();
         });
