@@ -2,21 +2,21 @@
 using namespace TCP;
 
 Client::Client(char ip[], char port[])
+    : Socket()
 {
     WSADATA wsaData;
     if (WSAStartup(0x101, &wsaData))
         RecordErrorAndReturn();
 
-    sockaddr_in target = { 0 };
-    target.sin_family = AF_INET;
-    stringToIP(ip, target);
-    stringToPort(port, target);
+    address.sin_family = AF_INET;
+    stringToIP(ip, address);
+    stringToPort(port, address);
 
-    server = socket(AF_INET, SOCK_STREAM, 0);
-    if (server == INVALID_SOCKET)
+    target = socket(AF_INET, SOCK_STREAM, 0);
+    if (target == INVALID_SOCKET)
         RecordErrorAndReturn();
 
-    if (connect(server, (sockaddr*)&target, sizeof(target)) < 0)
+    if (connect(target, (sockaddr*)&address, sizeof(address)) < 0)
         RecordErrorAndReturn();
 
     printf("Connected to TCP: %s:%s\n", ip, port);
@@ -26,7 +26,7 @@ Client::Client(char ip[], char port[])
         int length = 0;
         while (isRunning)
         {
-            length = recv(server, (char*)&rx, sizeof(rx), 0);
+            length = recv(target, (char*)&rx, sizeof(rx), 0);
             if (rx.length + EmptyMessageSize > length)
                 continue;
 
@@ -45,7 +45,7 @@ void Client::Transmit(const service serv)
 {
     tx.length = 0;
     tx.service = serv;
-    if (send(server, (char*)&tx, EmptyMessageSize, 0))
+    if (send(target, (char*)&tx, EmptyMessageSize, 0))
         RecordErrorAndReturn();
 
     memset(&tx, 0, EmptyMessageSize);
@@ -56,7 +56,7 @@ void Client::Transmit(const service serv, void* data, int16_t size)
     tx.service = serv;
     tx.length = size < ArgumentSize ? size : ArgumentSize;
     memcpy(tx.argument, data, tx.length);
-    if (send(server, (char*)&tx, EmptyMessageSize + tx.length, 0))
+    if (send(target, (char*)&tx, EmptyMessageSize + tx.length, 0))
         RecordErrorAndReturn();
     
     memset(&tx, 0, EmptyMessageSize + tx.length);
@@ -66,7 +66,7 @@ void Client::CloseConnection()
 {
     isRunning = false;
     receiveThread.join();
-    closesocket(server);
+    closesocket(target);
     WSACleanup();
 }
 

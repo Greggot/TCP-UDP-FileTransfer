@@ -8,26 +8,20 @@
 
 namespace UDP
 {
-	class Server
+	class Server : public Socket
 	{
 	private:
 		Buffer rx;
 
-		sockaddr_in server, client;
-		SOCKET sock;
-		int error;
 		std::thread receiveThread;
-		bool isRunning = false;
-
 		receiveCallback callback = nullptr;
 	public:
 		Server(char ip[], char port[]);
 		Server(){};
 
-		void AcceptConnection();
-		void CloseConnection();
+		virtual void AcceptConnection() final;
+		virtual void CloseConnection() final;
 		
 		void set(receiveCallback call) { callback = call; }
-		int getLastError() const { return error; }
 	};
 }

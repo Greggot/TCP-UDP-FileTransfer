@@ -3,8 +3,6 @@
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 
-#define RecordErrorAndReturn() { error = WSAGetLastError(); return; }
-
 inline void stringToIP(char* string, sockaddr_in& sockaddr)
 {
 	sockaddr.sin_addr.s_addr = 0;
@@ -33,4 +31,29 @@ inline void outputLongBuffer(const char description[], const void* data, size_t 
 
 	printf("\n");
 
+}
+
+#define RecordErrorAndReturn() { error = WSAGetLastError(); return; }
+class Socket
+{
+protected:
+	int error = 0;
+	SOCKET me, target;
+	bool isRunning = false;
+	sockaddr_in address = { 0 };
+
+	virtual void AcceptConnection() {};
+	virtual void CloseConnection() {};
+public:
+	Socket() : me(0), target(0) {}
+	int getLastError() const { return error; }
+};
+
+inline void TryToReportErrorAndExit(const char description[], const Socket& socket)
+{
+	int error = socket.getLastError();
+	if (error == 0)
+		return;
+	printf("%s - %i\n", description, error);
+	exit(error);
 }

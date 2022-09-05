@@ -6,21 +6,16 @@
 
 namespace TCP
 {
-	class Client
+	class Client : public Socket
 	{
 	private:
 		Buffer rx, tx;
-		SOCKET server;
-		int error;
-		bool isRunning = false;
 
 		std::thread receiveThread;
 		receiveCallback callbacks[service::Amount]{ nullptr };
 	public:
 		Client(char ip[], char port[]);
 
-		void CloseConnection();
-		
 		void Transmit(const service serv);
 		void Transmit(const service serv, void* data, int16_t size);
 		template<class type>
@@ -29,7 +24,7 @@ namespace TCP
 			Transmit(serv, (void*) & data, size);
 		}
 
-		int getLastError() const { return error; }
+		virtual void CloseConnection() final;
 		void set(service serv, receiveCallback call) { callbacks[serv] = call; }
 
 		~Client();

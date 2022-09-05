@@ -5,11 +5,9 @@
 
 namespace UDP
 {
-	class Client
+	class Client : public Socket
 	{
 	private:
-		sockaddr_in server;
-		int sock, error;
 		Buffer tx;
 
 	public:
@@ -18,13 +16,13 @@ namespace UDP
 		template<class type>
 		void Transmit(const type& data, const size_t size = sizeof(type)) 
 		{
-			if (sendto(sock, (char*)&data, size, 0, (sockaddr*)&server, sizeof(server)) < 0)
+			if (sendto(target, (char*)&data, size, 0, nullptr, nullptr) < 0)
 				RecordErrorAndReturn();
 		}
 		void Transmit(const void* data, const size_t size);
 		void Transmit(size_t size);
 		Buffer& getBuffer() { return tx; }
 
-		void CloseConnection();
+		virtual void CloseConnection() final;
 	};
 }

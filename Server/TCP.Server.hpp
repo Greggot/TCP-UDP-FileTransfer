@@ -10,17 +10,13 @@
 
 namespace TCP
 {
-	class Server
+	class Server : public Socket
 	{
 	private:
 		Buffer rx, tx;
-		SOCKET client, server;
-		int error;
-		bool isRunning = false;
 
 		std::thread receiveThread;
 		receiveCallback callbacks[service::Amount]{nullptr};
-
 	public:
 		Server(char ip[], char port[]);
 		/**
@@ -29,11 +25,11 @@ namespace TCP
 		* Setup all callbacks before
 		* Place connection close and error parse after.
 		*/
-		void AcceptConnection();
+		virtual void AcceptConnection() final;
 		/**
 		* @brief Finish AcceptConnection call, close socket
 		*/
-		void CloseConnection();
+		virtual void CloseConnection() final;
 
 		void Transmit(const service serv);
 		void Transmit(void* data, int16_t size);
@@ -44,7 +40,6 @@ namespace TCP
 			Transmit(&data, size);
 		}
 		
-		int getLastError() const { return error; }
 		void set(service serv, receiveCallback call) { callbacks[serv] = call; }
 
 		~Server();
