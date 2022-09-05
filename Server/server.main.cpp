@@ -16,8 +16,16 @@ enum Argument
     Amount,
 };
 
-
 #define Kilobyte 1024
+
+static inline FILE* clearFileAndOpen(const char path[])
+{
+    FILE* file = fopen(path, "w");
+    if (file)
+        fclose(file);
+    file = fopen(path, "ab");
+    return file;
+}
 
 int main(int argc, char* argv[])
 {
@@ -30,18 +38,15 @@ int main(int argc, char* argv[])
     if (!std::filesystem::exists(argv[Folder]))
         std::filesystem::create_directory(argv[Folder]);
 
-    static FILE* out;
-
     while (true)
     {
+        static FILE* out;
         TCP::Server tcp(argv[IP], argv[Port]);
         TryToReportErrorAndExit("Error appeared in TCP::Server", tcp);
         UDP::Server udp;
         size_t readsize = 0;
 
         static const auto updreceive = [&readsize, &tcp](const UDP::Buffer& request, size_t size) {
-            request.sequenceNumber;
-
             readsize += size;
             printf("\r Received %.2f KB", (float)readsize / Kilobyte);
 
@@ -52,20 +57,16 @@ int main(int argc, char* argv[])
 
         tcp.set(TCP::FileName, [argv](const TCP::Buffer& request) {
             std::string filepath = std::string(argv[Folder]) + "/" + std::string((char*)request.argument);
-            
-            out = fopen(filepath.c_str(), "w");
-            if(out)
-                fclose(out);
-            out = fopen(filepath.c_str(), "ab");
+            out = clearFileAndOpen(filepath.c_str());
             if (out)
                 printf("Created file \"%s\"\n", request.argument);
         });
 
         tcp.set(TCP::UDPclose, [&udp, &tcp](const TCP::Buffer&) {
             udp.CloseConnection();
+            tcp.CloseConnection();
             fclose(out);
             printf("\nFile closed! Server waiting one another connection...\n");
-            tcp.CloseConnection();
         });
 
         tcp.set(TCP::UDPstart, [&udp, argv](const TCP::Buffer& request) {
@@ -76,12 +77,13 @@ int main(int argc, char* argv[])
         });
 
         tcp.AcceptConnection();
-        udp.CloseConnection();
         
         int error = tcp.getLastError();
         if (error)
+        {
             printf("\nConnection terminated: %i\n", error);
-
+            udp.CloseConnection();
+        }
         printf("\n\n");
     }
 

@@ -15,6 +15,20 @@ static inline char* getFileNamePtr(char* source, size_t size)
 	return source;
 }
 
+static inline void ReadFileSize(FILE* file, size_t& size)
+{
+	fseek(file, 0, SEEK_END);
+	size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+}
+
+static inline void InitiateFileTransfer(TCP::Client& tcp, const char filename[], const char port[])
+{
+	tcp.Transmit(TCP::FileName, (void*)filename, strlen(filename));
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	tcp.Transmit(TCP::UDPstart, (void*)port, strlen(port));
+}
+
 enum Argument
 {
 	IP = 1, 
@@ -36,10 +50,6 @@ int main(int argc, char* argv[])
 	}
 
 	static char* filename = getFileNamePtr(argv[FilePath], sizeof(argv[FilePath]));
-	size_t namelen = strlen(argv[FilePath]);
-	if (filename == argv[FilePath])
-		namelen = namelen - (filename - argv[FilePath]);
-
 	FILE* in = fopen(argv[FilePath], "rb");
 	if (in == nullptr)
 	{
@@ -58,25 +68,21 @@ int main(int argc, char* argv[])
 	tcp.set(TCP::Confirmation, [](const TCP::Buffer&) {
 		confirm = true;
 		confirmation.notify_one();
-		});
+	});
 
-	std::thread([&tcp, &in, argv, namelen]() {
+	std::thread([&tcp, &in, argv]() {
 		size_t milliseconds = strtoul(argv[Timeout], NULL, 10);
 
-		fseek(in, 0, SEEK_END);
-		size_t overallsize = ftell(in);
-		fseek(in, 0, SEEK_SET);
-		
 		UDP::Client udp(argv[IP], argv[UDPport]);
 		TryToReportErrorAndExit("Error appeared in UDP::Client", udp);
 
 		UDP::Buffer& inbuffer = udp.getBuffer();
 		inbuffer.sequenceNumber = 0;
 
-		tcp.Transmit(TCP::FileName, (void*)filename, namelen);
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		tcp.Transmit(TCP::UDPstart, (void*)argv[UDPport], strlen(argv[UDPport]));
-
+		InitiateFileTransfer(tcp, filename, argv[UDPport]);
+		
+		size_t overallsize = 0;
+		ReadFileSize(in, overallsize);
 		size_t readsize = 0;
 		size_t size = 1;
 		while (size)
@@ -89,7 +95,6 @@ int main(int argc, char* argv[])
 			confirm = false;
 			++inbuffer.sequenceNumber;
 			readsize += size;
-
 			printf("\rProgress: %.2f", 100 * (float)readsize / overallsize);
 		}
 
